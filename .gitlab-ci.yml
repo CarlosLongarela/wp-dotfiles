@@ -1,0 +1,29 @@
+image: mwienk/docker-lftp
+
+stages:
+  - deploy
+
+before_script:
+
+variables:
+  LOCAL_SFTP_HOST: $SFTP_HOST
+  LOCAL_SFTP_PASS: $SFTP_PASS
+  LOCAL_SFTP_PORT: $SFTP_PORT
+  LOCAL_SFTP_USER: $SFTP_USER
+  LOCAL_SFTP_WP_ROOT_PATH: $SFTP_WP_ROOT_PATH
+  STAGING_PATH: "/wp-content/themes-or-plugins/plugin-theme-name"
+  IGNORE_DIRS: "-x .git -x __SRC/ -x .vscode/ -x node_modules/"
+
+deploy:
+  stage: deploy
+  # only run on main branch
+  only:
+    - main
+  script:
+    - lftp -u $LOCAL_SFTP_USER,$LOCAL_SFTP_PASS -p $LOCAL_SFTP_PORT sftp://$LOCAL_SFTP_HOST -e "set sftp:auto-confirm yes ; set ftp:ssl-allow no ; mirror -e -R $IGNORE_DIRS -p $CI_PROJECT_DIR $LOCAL_SFTP_WP_ROOT_PATH$STAGING_PATH ; quit"
+    # https://stackoverflow.com/questions/41633518/automated-gitlab-ci-yml-lftp-configuration/41645006#41645006
+    - echo "Deployment complete"
+  # specify the environment that this job is using
+  environment:
+    name: staging
+    url: https://project-name.gueb.pro/
